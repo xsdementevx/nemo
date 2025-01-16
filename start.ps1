@@ -5,24 +5,18 @@ function ClrHistory {
         # Очистка журнала PowerShell
         if (Get-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue) {
             Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
-        } else {
-            Write-Host "No logs found in 'Windows PowerShell'." -ForegroundColor Yellow
         }
 
         # Удаление директории PowerShell в AppData, если она существует
         $powershellDir = Join-Path $env:AppData 'Microsoft\Windows\PowerShell'
         if (Test-Path $powershellDir) {
             Remove-Item $powershellDir -Recurse -Force -ErrorAction Stop
-        } else {
-            Write-Host "Directory not found: $powershellDir" -ForegroundColor Yellow
         }
 
         # Удаление файла истории PSReadLine
         $historyPath = (Get-PSReadlineOption).HistorySavePath
         if (Test-Path $historyPath) {
             Remove-Item $historyPath -Force -ErrorAction Stop
-        } else {
-            Write-Host "History file not found: $historyPath" -ForegroundColor Yellow
         }
 
     } catch {
