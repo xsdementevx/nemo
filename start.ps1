@@ -1,14 +1,36 @@
 function ClrHistory {
     try {
-        Write-Host "Clear log" -ForegroundColor Green
-        Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
-        Remove-Item ($env:AppData + '\Microsoft\Windows\PowerShell') -Recurse -Force -ErrorAction Stop
-        Remove-Item (Get-PSReadlineOption).HistorySavePath -Force -ErrorAction Stop
+        Write-Host "Clearing logs and history..." -ForegroundColor Green
+        
+        # Очистка журнала PowerShell
+        if (Get-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue) {
+            Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
+        } else {
+            Write-Host "No logs found in 'Windows PowerShell'." -ForegroundColor Yellow
+        }
+
+        # Удаление директории PowerShell в AppData, если она существует
+        $powershellDir = Join-Path $env:AppData 'Microsoft\Windows\PowerShell'
+        if (Test-Path $powershellDir) {
+            Remove-Item $powershellDir -Recurse -Force -ErrorAction Stop
+        } else {
+            Write-Host "Directory not found: $powershellDir" -ForegroundColor Yellow
+        }
+
+        # Удаление файла истории PSReadLine
+        $historyPath = (Get-PSReadlineOption).HistorySavePath
+        if (Test-Path $historyPath) {
+            Remove-Item $historyPath -Force -ErrorAction Stop
+        } else {
+            Write-Host "History file not found: $historyPath" -ForegroundColor Yellow
+        }
+
     } catch {
-        Write-Host "Error clear history." -ForegroundColor Red
-		Start-Sleep -s 1
+        Write-Host "Error clearing history: $($_.Exception.Message)" -ForegroundColor Red
+        Start-Sleep -s 1
     }
 }
+
 
 function AddToDefenderExclusions {
     try {
