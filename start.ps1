@@ -21,7 +21,7 @@ function Ensure-RunAsAdmin {
         }
     }
 }
-
+cls
 # Пример использования функции
 Ensure-RunAsAdmin
 
