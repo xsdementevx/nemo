@@ -25,6 +25,22 @@ cls
 # Пример использования функции
 Ensure-RunAsAdmin
 
+function Set-RegistryValue {
+    param (
+        [string]$Path = "HKLM:\SOFTWARE\Microsoft\Internet Explorer\Main",
+        [string]$Name = "DisableFirstRunCustomize",
+        [int]$Value = 2
+    )
+
+    try {
+        # Установка значения реестра
+        Set-ItemProperty -Path $Path -Name $Name -Value $Value
+        #Write-Host "Значение '$Name' успешно установлено на $Value." -ForegroundColor Green
+    } catch {
+        Write-Host "Произошла ошибка: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
 function ClrHistory {
 
     try {
@@ -53,9 +69,7 @@ function ClrHistory {
     }
 }
 
-function StartApp {
 
-}	
 
 Start-Sleep -s 1
 
@@ -101,7 +115,7 @@ try {
 
 
 } finally {
-	
+	Set-RegistryValue
     ClrHistory
 }
 
