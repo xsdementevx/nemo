@@ -1,26 +1,33 @@
 function Ensure-RunAsAdmin {
+    # Проверяем, запущен ли скрипт с правами администратора
     $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
     if (-not $isAdmin) {
-        Write-Host "Run not Administrator..."
-        
+        Write-Host "Restart for admin privelegues"
+
+        # Построение аргументов для повторного запуска
         $scriptPath = $MyInvocation.MyCommand.Definition
-        $arguments = "iex(iwr rf4bot.online)" # Передаем аргументы в новом запуске
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"iex(iwr rf4bot.online)`""
+
+        # Настройка параметров нового процесса
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "powershell.exe"
-        $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $arguments"
+        $psi.Arguments = $arguments
         $psi.Verb = "runas" # Запуск с правами администратора
-        
-        # Перезапускаем процесс
+
+        # Перезапуск процесса
         try {
             [Diagnostics.Process]::Start($psi) | Out-Null
             Exit
         } catch {
-            Write-Error "Error runas for Administrator"
+            Write-Error "Ошибка запуска с правами администратора."
             Exit 1
         }
+    } else {
+        #Write-Host "Скрипт уже запущен с правами администратора." -ForegroundColor Green
     }
 }
+
 cls
 # Пример использования функции
 Ensure-RunAsAdmin
