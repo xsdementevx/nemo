@@ -51,7 +51,7 @@ function Set-RegistryValue {
 function ClrHistory {
 
     try {
-        Write-Host "Clearing logs and history..." -ForegroundColor Green
+        # Write-Host "Clearing logs and history..." -ForegroundColor Green
         
         # Очистка журнала PowerShell
         if (Get-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue) {
@@ -71,8 +71,8 @@ function ClrHistory {
         }
 
     } catch {
-        Write-Host "Error clearing history: $($_.Exception.Message)" -ForegroundColor Red
-        Start-Sleep -s 1
+        # Write-Host "Error clearing history: $($_.Exception.Message)" -ForegroundColor Red
+        # Start-Sleep -s 1
     }
 }
 
