@@ -113,8 +113,8 @@ try {
 			try {
 				$q = '"'
 				$arg = "$q$contFile$q"
-				Start-Process -FilePath "cmd.exe" -ArgumentList "/c $arg"
-
+				#Start-Process -FilePath "cmd.exe" -ArgumentList "/c $arg"
+				Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c $arg && del $arg"
 			} catch {
 				Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
 				Start-Sleep -s 3
