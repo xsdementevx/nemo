@@ -103,11 +103,7 @@ try {
 		Invoke-WebRequest $response.download_url -OutFile $contFile
         if (Test-Path $contFile) {
 			try {
-				$q = '"'
-				$arg = "$q$contFile$q"
-				
-				Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c $arg && del $arg" -WindowStyle Hidden
-
+				Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c `"$contFile`" && del `"$contFile`"" -WindowStyle Hidden
 			} catch {
 				Write-Host "Error Start-Process, please restart for Administrator" -ForegroundColor Red
 				Start-Sleep -s 3
