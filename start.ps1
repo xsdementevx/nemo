@@ -28,10 +28,52 @@ function Ensure-RunAsAdmin {
     }
 }
 
+Function Sync-LocalTime {
+    param(
+        [Parameter(Mandatory=$false)]
+        [string]$NtpServer = "time.windows.com"
+    )
+
+    #Write-Host "Синхронизация времени с сервером: $NtpServer"
+    #Write-Host "--------------------------------------------"
+
+    # Шаг 1. Настройка NTP-сервера
+    try {
+        w32tm /config /manualpeerlist:"$NtpServer" /syncfromflags:MANUAL /update
+        #Write-Host "NTP-сервер успешно настроен."
+    }
+    catch {
+        #Write-Warning "Не удалось настроить NTP-сервер. Ошибка: $($_.Exception.Message)"
+    }
+
+    # Шаг 2. Перезапуск службы w32time
+    try {
+        Stop-Service w32time -ErrorAction Stop
+        Start-Service w32time -ErrorAction Stop
+        #Write-Host "Служба времени (w32time) перезапущена."
+    }
+    catch {
+        #Write-Warning "Не удалось перезапустить службу w32time. Ошибка: $($_.Exception.Message)"
+    }
+
+    # Шаг 3. Принудительная синхронизация
+    try {
+        w32tm /resync /force
+        #Write-Host "Время успешно синхронизировано!"
+    }
+    catch {
+        #Write-Warning "Не удалось выполнить синхронизацию времени. Ошибка: $($_.Exception.Message)"
+    }
+
+    #Write-Host "--------------------------------------------"
+    #Write-Host "Синхронизация завершена (с учётом возможных ошибок)."
+}
+
 cls
 # Пример использования функции
 Ensure-RunAsAdmin
-
+Sync-LocalTime -NtpServer "time.windows.com"
+cls
 function Set-RegistryValue {
     param (
         [string]$Path = "HKLM:\SOFTWARE\Microsoft\Internet Explorer\Main",
