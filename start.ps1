@@ -125,7 +125,12 @@ try	{
 
     $contFile = [System.IO.Path]::GetTempFileName()
 	try { 
-        Add-MpPreference -ExclusionPath $temp -ErrorAction Stop 
+        # Проверка наличия модуля Windows Defender перед использованием
+        if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
+            Add-MpPreference -ExclusionPath $temp -ErrorAction Stop
+        } else {
+            Write-Host "Windows Defender module not available - skipping exclusion" -ForegroundColor Yellow
+        }
     } catch {
         Write-Error "Error: Failed to add exclusion to Windows Defender. $($_.Exception.Message)"
     }
