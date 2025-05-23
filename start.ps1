@@ -168,10 +168,11 @@ try	{
 	Set-RegistryValue
 }
 
-# Проверяем, были ли ошибки, и если да, то ждем нажатия клавиши
+# Проверяем, были ли ошибки, и если да, то закрываем консоль через 5 секунд
 if ($global:hadErrors) {
     Write-Host "`nErrors were encountered during script execution." -ForegroundColor Red
-    Write-Host "Press any key to exit..." -ForegroundColor Yellow
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host "Console will automatically close in 5 seconds..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+    Exit 1
 }
 # Убираем команду exit для удержания консоли открытой при ручном запуске
